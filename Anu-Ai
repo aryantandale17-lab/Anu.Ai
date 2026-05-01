@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANU Voice System</title>
+    <style>
+        body { background: #050505; color: #00f5ff; font-family: 'Segoe UI', monospace; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #status { margin-top: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; color: #00aaff; }
+        #log { height: 200px; width: 80%; overflow-y: auto; border: 1px solid #00f5ff; padding: 15px; margin-top: 20px; background: rgba(0, 245, 255, 0.05); box-shadow: 0 0 15px rgba(0, 245, 255, 0.2); border-radius: 8px; }
+        button { background: transparent; color: #00f5ff; border: 2px solid #00f5ff; padding: 10px 20px; cursor: pointer; font-family: inherit; font-size: 1.2rem; transition: 0.3s; margin-bottom: 20px; }
+        button:hover { background: #00f5ff; color: black; box-shadow: 0 0 20px #00f5ff; }
+        .user-text { color: #fff; }
+        .anu-text { color: #00f5ff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h1>ANU — INTELLIGENCE</h1>
+<button id="startBtn">INITIALIZE SYSTEM</button>
+<div id="status">System Offline</div>
+<div id="log"></div>
+
+<script>
+const API_KEY = "YOUR_API_KEY_HERE"; // Ensure your billing is active!
+
+const SYSTEM_PROMPT = "You are ANU, a JARVIS-inspired AI. Be brief, witty, and professional. Use 'sir' occasionally.";
+const log = document.getElementById("log");
+const statusEl = document.getElementById("status");
+const startBtn = document.getElementById("startBtn");
+
+// ── TEXT TO SPEECH ──
+function speak(text) {
+    window.speechSynthesis.cancel(); // Stop any current speech
+    const utter = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    // Try to find a more "robotic/pro" voice if available
+    utter.voice = voices.find(v => v.name.includes('Google UK English Male')) || voices[0];
+    utter.rate = 1.0;
+    utter.pitch = 0.9;
+    window.speechSynthesis.speak(utter);
+}
+
+function addLog(sender, text) {
+    const div = document.createElement('div');
+    div.innerHTML = `<span class="${sender === 'ANU' ? 'anu-text' : 'user-text'}">> ${sender}:</span> ${text}`;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+}
+
+// ── AI RESPONSE ──
+async function getAIResponse(input) {
+    statusEl.innerText = "Processing...";
+    try {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: input }]
+            })
+        });
+        const data = await res.json();
+        const reply = data.choices[0].message.content;
+        addLog("ANU", reply);
+        speak(reply);
+    } catch (err) {
+        addLog("System", "Error connecting to neural network.");
+    }
+    statusEl.innerText = "Listening...";
+}
+
+// ── SPEECH RECOGNITION ──
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) {
+    alert("Please use Chrome or Edge for Speech capabilities.");
+} else {
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false; // Set to false for better 'wake word' control
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.toLowerCase();
+        addLog("You", transcript);
+
+        if (transcript.includes("anu") || transcript.includes("hey")) {
+            let command = transcript.replace("anu", "").trim();
+            if (command === "") {
+                speak("Yes, sir? Standing by.");
+            } else if (command.includes("time")) {
+                speak("The time is " + new Date().toLocaleTimeString());
+            } else {
+                getAIResponse(command);
+            }
+        }
+    };
+
+    recognition.onend = () => { recognition.start(); }; // Keep listening
+    
+    startBtn.addEventListener('click', () => {
+        recognition.start();
+        startBtn.style.display = "none";
+        statusEl.innerText = "Listening...";
+        speak("System online. How can I assist you today, sir?");
+        addLog("System", "ANU v1.0 Online.");
+    });
+}
+</script>
+</body>
+</html>
+
