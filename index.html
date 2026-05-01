@@ -5,22 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ANU AI System</title>
     <style>
-        body { background: #000; color: #00f5ff; font-family: monospace; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        #log { height: 150px; width: 80%; overflow-y: auto; border: 1px solid #00f5ff; padding: 10px; margin: 20px 0; background: rgba(0, 245, 255, 0.05); font-size: 0.9rem; text-align: left; }
-        button { background: transparent; color: #00f5ff; border: 2px solid #00f5ff; padding: 15px 30px; cursor: pointer; font-size: 1rem; font-weight: bold; }
-        #status { color: #fff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        body { background: #000; color: #00f5ff; font-family: 'Courier New', monospace; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        #log { height: 180px; width: 85%; overflow-y: auto; border: 1px solid #00f5ff; padding: 15px; margin: 20px 0; background: rgba(0, 245, 255, 0.05); font-size: 0.85rem; text-align: left; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 245, 255, 0.2); }
+        button { background: #00f5ff; color: #000; border: none; padding: 18px 40px; cursor: pointer; font-size: 1.1rem; font-weight: bold; border-radius: 50px; text-transform: uppercase; box-shadow: 0 0 20px #00f5ff; }
+        #status { color: #fff; margin-bottom: 15px; font-size: 1.2rem; letter-spacing: 2px; }
+        .system-msg { color: #ffaa00; }
+        .anu-msg { color: #00f5ff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>ANU — INTELLIGENCE</h1>
-    <div id="status">System Offline</div>
-    <button id="startBtn">INITIALIZE SYSTEM</button>
+    <h1 style="letter-spacing: 5px;">A.N.U.</h1>
+    <div id="status">READY TO INITIALIZE</div>
+    <button id="startBtn">START SYSTEM</button>
     <div id="log"></div>
 
     <script>
-        // 1. PASTE YOUR API KEY HERE
-        const API_KEY = "PASTE_YOUR_KEY_HERE"; 
+        // REPLACE THE TEXT BELOW WITH YOUR KEY (Keep the quotes "")
+        const API_KEY = "PASTE_YOUR_OPENAI_KEY_HERE"; 
 
         const log = document.getElementById("log");
         const statusEl = document.getElementById("status");
@@ -29,45 +31,61 @@
         function speak(text) {
             window.speechSynthesis.cancel();
             const utter = new SpeechSynthesisUtterance(text);
-            utter.rate = 1.1;
-            utter.pitch = 0.9;
+            utter.rate = 1.0;
+            utter.pitch = 0.8;
             window.speechSynthesis.speak(utter);
         }
 
-        function addLog(text) {
+        function addLog(sender, text, isError = false) {
             const div = document.createElement('div');
-            div.innerText = "> " + text;
+            div.style.marginBottom = "5px";
+            if(isError) div.style.color = "#ff4444";
+            div.innerHTML = `<span class="${sender === 'ANU' ? 'anu-msg' : 'system-msg'}">> ${sender}:</span> ${text}`;
             log.appendChild(div);
             log.scrollTop = log.scrollHeight;
         }
 
         async function getAIResponse(input) {
-            statusEl.innerText = "Processing...";
+            statusEl.innerText = "THINKING...";
+            if (API_KEY.includes("PASTE_YOUR")) {
+                addLog("SYSTEM", "ERROR: You haven't pasted your API Key in the code yet!", true);
+                speak("Sir, the API key is missing in the source code.");
+                statusEl.innerText = "KEY MISSING";
+                return;
+            }
+
             try {
                 const res = await fetch("https://api.openai.com/v1/chat/completions", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + API_KEY },
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
                     body: JSON.stringify({
                         model: "gpt-4o-mini",
                         messages: [
-                            { role: "system", content: "You are ANU, a witty and loyal AI assistant like JARVIS. Be brief." },
+                            { role: "system", content: "You are ANU, a loyal and advanced AI. Keep answers short. Address the user as Sir." },
                             { role: "user", content: input }
                         ]
                     })
                 });
+                
                 const data = await res.json();
-                const reply = data.choices[0].message.content;
-                addLog("ANU: " + reply);
-                speak(reply);
+                
+                if (data.error) {
+                    addLog("SYSTEM", "OpenAI Error: " + data.error.message, true);
+                    speak("Sir, there is an error with the brain connection.");
+                } else {
+                    const reply = data.choices[0].message.content;
+                    addLog("ANU", reply);
+                    speak(reply);
+                }
             } catch (e) {
-                addLog("System Error: Check API Key/Balance");
+                addLog("SYSTEM", "CONNECTION FAILED. Check internet.", true);
             }
-            statusEl.innerText = "Listening...";
+            statusEl.innerText = "LISTENING...";
         }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            alert("Speech not supported in this browser.");
+            addLog("SYSTEM", "Browser not supported. Use Chrome.", true);
         } else {
             const recognition = new SpeechRecognition();
             recognition.continuous = false;
@@ -75,10 +93,8 @@
 
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript.toLowerCase();
-                addLog("You: " + transcript);
-                if (transcript.includes("anu") || transcript.includes("hey")) {
-                    getAIResponse(transcript);
-                }
+                addLog("YOU", transcript);
+                getAIResponse(transcript);
             };
 
             recognition.onend = () => { recognition.start(); };
@@ -86,12 +102,11 @@
             startBtn.addEventListener('click', () => {
                 recognition.start();
                 startBtn.style.display = "none";
-                statusEl.innerText = "Listening...";
-                speak("ANU online. Standing by for instructions, sir.");
-                addLog("System: Online");
+                statusEl.innerText = "LISTENING...";
+                speak("System online. I am A N U. How can I help, sir?");
+                addLog("SYSTEM", "Voice link established.");
             });
         }
     </script>
 </body>
 </html>
-
