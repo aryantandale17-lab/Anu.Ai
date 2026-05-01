@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>anu</title>
     <style>
-        body { background: #000; color: #00f5ff; font-family: monospace; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        body { background: #000; color: #00f5ff; font-family: 'Courier New', monospace; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
         #log { height: 200px; width: 85%; overflow-y: auto; border: 1px solid #00f5ff; padding: 15px; margin: 20px 0; background: rgba(0, 245, 255, 0.05); font-size: 0.9rem; text-align: left; border-radius: 8px; }
-        button { background: transparent; color: #00f5ff; border: 2px solid #00f5ff; padding: 15px 40px; cursor: pointer; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; }
-        button:hover { background: #00f5ff; color: #000; }
+        button { background: #00f5ff; color: #000; border: none; padding: 15px 40px; cursor: pointer; font-size: 1.2rem; font-weight: bold; text-transform: uppercase; border-radius: 5px; box-shadow: 0 0 15px #00f5ff; }
         #status { color: #fff; margin-bottom: 10px; font-size: 1.2rem; letter-spacing: 3px; }
         .anu-msg { color: #00f5ff; font-weight: bold; }
         .sys-msg { color: #ffaa00; }
@@ -16,14 +15,14 @@
 </head>
 <body>
 
-    <h1 style="font-size: 3rem; margin: 0;">anu</h1>
+    <h1 style="font-size: 3.5rem; margin: 0; letter-spacing: 5px;">anu</h1>
     <div id="status">OFFLINE</div>
-    <button id="startBtn">Initialize</button>
+    <button id="startBtn">INITIALIZE</button>
     <div id="log"></div>
 
     <script>
-        // PASTE YOUR REAL KEY BELOW
-        const API_KEY = "YOUR_KEY_HERE"; 
+        // 1. PUT YOUR REAL OPENAI KEY BETWEEN THE QUOTES BELOW
+        const API_KEY = "sk-REPLACE_THIS_WITH_YOUR_ACTUAL_KEY"; 
 
         const log = document.getElementById("log");
         const statusEl = document.getElementById("status");
@@ -47,9 +46,10 @@
 
         async function getAIResponse(input) {
             statusEl.innerText = "THINKING";
-            if (API_KEY === "YOUR_KEY_HERE") {
-                addLog("SYSTEM", "Error: Key not pasted in code.", true);
-                speak("Sir, you have not provided my API key in the source code yet.");
+            
+            if (API_KEY.includes("REPLACE_THIS")) {
+                addLog("SYSTEM", "Error: You forgot to paste your API Key!", true);
+                speak("Sir, please paste your API key in the GitHub code.");
                 return;
             }
 
@@ -59,19 +59,25 @@
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
                     body: JSON.stringify({
                         model: "gpt-4o-mini",
-                        messages: [{ role: "system", content: "Your name is anu. You are a helpful AI like Jarvis. Be brief." }, { role: "user", content: input }]
+                        messages: [
+                            { role: "system", content: "Your name is anu. You are a loyal, witty AI assistant. Keep answers very short and call the user Sir." },
+                            { role: "user", content: input }
+                        ]
                     })
                 });
+                
                 const data = await res.json();
+                
                 if (data.error) {
-                    addLog("SYSTEM", data.error.message, true);
+                    addLog("SYSTEM", "OpenAI says: " + data.error.message, true);
+                    speak("Sir, there is an issue with the API account.");
                 } else {
                     const reply = data.choices[0].message.content;
                     addLog("anu", reply);
                     speak(reply);
                 }
             } catch (e) {
-                addLog("SYSTEM", "Connection failed.", true);
+                addLog("SYSTEM", "Connection failed. Check internet.", true);
             }
             statusEl.innerText = "LISTENING";
         }
@@ -93,8 +99,8 @@
             recognition.start();
             startBtn.style.display = "none";
             statusEl.innerText = "LISTENING";
-            speak("System online. I am anu.");
-            addLog("SYSTEM", "anu is now active.");
+            speak("System online. I am anu. Standing by, sir.");
+            addLog("SYSTEM", "Voice link established. Speak now.");
         });
     </script>
 </body>
