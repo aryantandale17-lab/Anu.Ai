@@ -52,3 +52,50 @@
                 speak("Sir, you have not provided my API key in the source code yet.");
                 return;
             }
+
+            try {
+                const res = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
+                    body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [{ role: "system", content: "Your name is anu. You are a helpful AI like Jarvis. Be brief." }, { role: "user", content: input }]
+                    })
+                });
+                const data = await res.json();
+                if (data.error) {
+                    addLog("SYSTEM", data.error.message, true);
+                } else {
+                    const reply = data.choices[0].message.content;
+                    addLog("anu", reply);
+                    speak(reply);
+                }
+            } catch (e) {
+                addLog("SYSTEM", "Connection failed.", true);
+            }
+            statusEl.innerText = "LISTENING";
+        }
+
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            addLog("YOU", transcript);
+            getAIResponse(transcript);
+        };
+
+        recognition.onend = () => { recognition.start(); };
+
+        startBtn.addEventListener('click', () => {
+            recognition.start();
+            startBtn.style.display = "none";
+            statusEl.innerText = "LISTENING";
+            speak("System online. I am anu.");
+            addLog("SYSTEM", "anu is now active.");
+        });
+    </script>
+</body>
+</html>
