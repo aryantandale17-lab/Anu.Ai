@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANU AI System</title>
+    <style>
+        body { background: #000; color: #00f5ff; font-family: monospace; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #log { height: 150px; width: 80%; overflow-y: auto; border: 1px solid #00f5ff; padding: 10px; margin: 20px 0; background: rgba(0, 245, 255, 0.05); font-size: 0.9rem; text-align: left; }
+        button { background: transparent; color: #00f5ff; border: 2px solid #00f5ff; padding: 15px 30px; cursor: pointer; font-size: 1rem; font-weight: bold; }
+        #status { color: #fff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+    <h1>ANU — INTELLIGENCE</h1>
+    <div id="status">System Offline</div>
+    <button id="startBtn">INITIALIZE SYSTEM</button>
+    <div id="log"></div>
+
+    <script>
+        // 1. PASTE YOUR API KEY HERE
+        const API_KEY = "PASTE_YOUR_KEY_HERE"; 
+
+        const log = document.getElementById("log");
+        const statusEl = document.getElementById("status");
+        const startBtn = document.getElementById("startBtn");
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.rate = 1.1;
+            utter.pitch = 0.9;
+            window.speechSynthesis.speak(utter);
+        }
+
+        function addLog(text) {
+            const div = document.createElement('div');
+            div.innerText = "> " + text;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function getAIResponse(input) {
+            statusEl.innerText = "Processing...";
+            try {
+                const res = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + API_KEY },
+                    body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [
+                            { role: "system", content: "You are ANU, a witty and loyal AI assistant like JARVIS. Be brief." },
+                            { role: "user", content: input }
+                        ]
+                    })
+                });
+                const data = await res.json();
+                const reply = data.choices[0].message.content;
+                addLog("ANU: " + reply);
+                speak(reply);
+            } catch (e) {
+                addLog("System Error: Check API Key/Balance");
+            }
+            statusEl.innerText = "Listening...";
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Speech not supported in this browser.");
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.toLowerCase();
+                addLog("You: " + transcript);
+                if (transcript.includes("anu") || transcript.includes("hey")) {
+                    getAIResponse(transcript);
+                }
+            };
+
+            recognition.onend = () => { recognition.start(); };
+
+            startBtn.addEventListener('click', () => {
+                recognition.start();
+                startBtn.style.display = "none";
+                statusEl.innerText = "Listening...";
+                speak("ANU online. Standing by for instructions, sir.");
+                addLog("System: Online");
+            });
+        }
+    </script>
+</body>
+</html>
+
