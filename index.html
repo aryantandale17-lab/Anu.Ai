@@ -3,26 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANU AI System</title>
+    <title>anu</title>
     <style>
-        body { background: #000; color: #00f5ff; font-family: 'Courier New', monospace; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        #log { height: 180px; width: 85%; overflow-y: auto; border: 1px solid #00f5ff; padding: 15px; margin: 20px 0; background: rgba(0, 245, 255, 0.05); font-size: 0.85rem; text-align: left; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 245, 255, 0.2); }
-        button { background: #00f5ff; color: #000; border: none; padding: 18px 40px; cursor: pointer; font-size: 1.1rem; font-weight: bold; border-radius: 50px; text-transform: uppercase; box-shadow: 0 0 20px #00f5ff; }
-        #status { color: #fff; margin-bottom: 15px; font-size: 1.2rem; letter-spacing: 2px; }
-        .system-msg { color: #ffaa00; }
+        body { background: #000; color: #00f5ff; font-family: monospace; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        #log { height: 200px; width: 85%; overflow-y: auto; border: 1px solid #00f5ff; padding: 15px; margin: 20px 0; background: rgba(0, 245, 255, 0.05); font-size: 0.9rem; text-align: left; border-radius: 8px; }
+        button { background: transparent; color: #00f5ff; border: 2px solid #00f5ff; padding: 15px 40px; cursor: pointer; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; }
+        button:hover { background: #00f5ff; color: #000; }
+        #status { color: #fff; margin-bottom: 10px; font-size: 1.2rem; letter-spacing: 3px; }
         .anu-msg { color: #00f5ff; font-weight: bold; }
+        .sys-msg { color: #ffaa00; }
     </style>
 </head>
 <body>
 
-    <h1 style="letter-spacing: 5px;">A.N.U.</h1>
-    <div id="status">READY TO INITIALIZE</div>
-    <button id="startBtn">START SYSTEM</button>
+    <h1 style="font-size: 3rem; margin: 0;">anu</h1>
+    <div id="status">OFFLINE</div>
+    <button id="startBtn">Initialize</button>
     <div id="log"></div>
 
     <script>
-        // REPLACE THE TEXT BELOW WITH YOUR KEY (Keep the quotes "")
-        const API_KEY = "PASTE_YOUR_OPENAI_KEY_HERE"; 
+        // PASTE YOUR REAL KEY BELOW
+        const API_KEY = "YOUR_KEY_HERE"; 
 
         const log = document.getElementById("log");
         const statusEl = document.getElementById("status");
@@ -32,81 +33,22 @@
             window.speechSynthesis.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             utter.rate = 1.0;
-            utter.pitch = 0.8;
+            utter.pitch = 1.0;
             window.speechSynthesis.speak(utter);
         }
 
         function addLog(sender, text, isError = false) {
             const div = document.createElement('div');
-            div.style.marginBottom = "5px";
             if(isError) div.style.color = "#ff4444";
-            div.innerHTML = `<span class="${sender === 'ANU' ? 'anu-msg' : 'system-msg'}">> ${sender}:</span> ${text}`;
+            div.innerHTML = `<span class="${sender === 'anu' ? 'anu-msg' : 'sys-msg'}">> ${sender}:</span> ${text}`;
             log.appendChild(div);
             log.scrollTop = log.scrollHeight;
         }
 
         async function getAIResponse(input) {
-            statusEl.innerText = "THINKING...";
-            if (API_KEY.includes("PASTE_YOUR")) {
-                addLog("SYSTEM", "ERROR: You haven't pasted your API Key in the code yet!", true);
-                speak("Sir, the API key is missing in the source code.");
-                statusEl.innerText = "KEY MISSING";
+            statusEl.innerText = "THINKING";
+            if (API_KEY === "YOUR_KEY_HERE") {
+                addLog("SYSTEM", "Error: Key not pasted in code.", true);
+                speak("Sir, you have not provided my API key in the source code yet.");
                 return;
             }
-
-            try {
-                const res = await fetch("https://api.openai.com/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
-                    body: JSON.stringify({
-                        model: "gpt-4o-mini",
-                        messages: [
-                            { role: "system", content: "You are ANU, a loyal and advanced AI. Keep answers short. Address the user as Sir." },
-                            { role: "user", content: input }
-                        ]
-                    })
-                });
-                
-                const data = await res.json();
-                
-                if (data.error) {
-                    addLog("SYSTEM", "OpenAI Error: " + data.error.message, true);
-                    speak("Sir, there is an error with the brain connection.");
-                } else {
-                    const reply = data.choices[0].message.content;
-                    addLog("ANU", reply);
-                    speak(reply);
-                }
-            } catch (e) {
-                addLog("SYSTEM", "CONNECTION FAILED. Check internet.", true);
-            }
-            statusEl.innerText = "LISTENING...";
-        }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            addLog("SYSTEM", "Browser not supported. Use Chrome.", true);
-        } else {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.lang = 'en-US';
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript.toLowerCase();
-                addLog("YOU", transcript);
-                getAIResponse(transcript);
-            };
-
-            recognition.onend = () => { recognition.start(); };
-
-            startBtn.addEventListener('click', () => {
-                recognition.start();
-                startBtn.style.display = "none";
-                statusEl.innerText = "LISTENING...";
-                speak("System online. I am A N U. How can I help, sir?");
-                addLog("SYSTEM", "Voice link established.");
-            });
-        }
-    </script>
-</body>
-</html>
