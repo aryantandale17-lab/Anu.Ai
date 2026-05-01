@@ -23,9 +23,7 @@
     <div id="log"></div>
 
     <script>
-        // --- PUT YOUR KEY INSIDE THE QUOTES BELOW ---
-        const API_KEY = "PASTE_YOUR_SK_KEY_HERE"; 
-        // --------------------------------------------
+        const API_KEY = "Sk-proj-TuxidXAUmeO42FIc6lQcFO44e-7HamdZ_EZYVcEOB5EA0M-R0r9Xb7OEWUWrAUQXPkafXtetRsT3BlbkFJBI58sRqkzR443Pl4CUrVda_qymhQupGisCszqFOd554QOglxzjcGMQln4yImHFFjW4DgRurEgA"; 
 
         const log = document.getElementById("log");
         const statusEl = document.getElementById("status");
@@ -50,13 +48,6 @@
 
         async function getAIResponse(input) {
             statusEl.innerText = "Processing...";
-            
-            if (API_KEY.includes("PASTE_YOUR")) {
-                addLog("SYSTEM", "CRITICAL ERROR: API Key is missing in the code!", true);
-                speak("Sir, you forgot to paste the secret key into the GitHub code.");
-                return;
-            }
-
             try {
                 const res = await fetch("https://api.openai.com/v1/chat/completions", {
                     method: "POST",
@@ -74,7 +65,7 @@
                 
                 if (data.error) {
                     addLog("SYSTEM", "OpenAI Error: " + data.error.message, true);
-                    speak("Sir, there is an issue with your OpenAI account balance or key.");
+                    speak("Sir, please check your OpenAI account balance.");
                 } else {
                     const reply = data.choices[0].message.content;
                     addLog("anu", reply);
